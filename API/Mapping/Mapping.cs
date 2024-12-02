@@ -1,5 +1,5 @@
-﻿using API.Models.DTOmodels;
-using API.Models;
+﻿using API.Models;
+using API.Models.DTOmodels;
 
 namespace API.Mapping
 {

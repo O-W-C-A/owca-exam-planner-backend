@@ -1,4 +1,6 @@
-﻿namespace API.Models
+﻿using System.ComponentModel.DataAnnotations.Schema;
+
+namespace API.Models
 {
     public class Department
     {
@@ -8,7 +10,8 @@
         public string Description { get; set; }
         public DateTime CreationDate { get; set; }
 
-        public virtual Faculty Faculty { get; set; }  // Foreign Key relationship
+        [ForeignKey("FacultyID")]
+        public virtual Faculty Faculty { get; set; }
 
     }
 }
