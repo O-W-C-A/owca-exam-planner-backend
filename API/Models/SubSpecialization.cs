@@ -3,19 +3,17 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace API.Models
 {
-    public class Group
+    public class SubSpecialization
     {
         [Key]
-        public int GroupID { get; set; }
-        public int SpecializationID { get; set; }
         public int SubSpecializationID { get; set; }
+        public int SpecializationID { get; set; }
         public string Name { get; set; }
+        public string Description { get; set; }
         public DateTime CreationDate { get; set; }
 
         [ForeignKey("SpecializationID")]
         public virtual Specialization Specialization { get; set; }
-
-        [ForeignKey("SubSpecializationID")]
-        public virtual SubSpecialization SubSpecialization { get; set; }
     }
+
 }

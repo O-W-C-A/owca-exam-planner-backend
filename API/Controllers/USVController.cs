@@ -1,6 +1,6 @@
 ﻿using API.Data;
-using API.Models;
 using API.Services;
+
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 

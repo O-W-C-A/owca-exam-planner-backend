@@ -4,7 +4,7 @@
     {
         public int GroupID { get; set; }
         public int CourseID { get; set; }
-        public List<int> RoomIDs { get; set; } // Listează ID-urile sălilor asociate
+        public List<int> RoomIDs { get; set; }
         public int AssistantID { get; set; }
         public int SessionID { get; set; }
         public string Type { get; set; }
@@ -14,5 +14,4 @@
         public string Details { get; set; }
         public string Status { get; set; }
     }
-
 }

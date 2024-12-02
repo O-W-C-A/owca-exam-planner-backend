@@ -1,6 +1,7 @@
 ﻿using API.Data;
 using API.Enum;
 using API.Mapping;
+
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 namespace API.Controllers
@@ -8,7 +9,7 @@ namespace API.Controllers
     public class ExamController : ControllerBase
     {
         private readonly ApiDbContext _context;
-        private readonly CourseMapper _courseMapper;  
+        private readonly CourseMapper _courseMapper;
 
         // Constructor
         public ExamController(ApiDbContext context, CourseMapper courseMapper)
@@ -20,13 +21,13 @@ namespace API.Controllers
         [HttpGet("GetCoursersForExamByUserID")]
         public async Task<IActionResult> GetCoursersForExamByUserID(int userId)
         {
-            
+
             var user = await _context.Users.FindAsync(userId);
             if (user == null)
             {
                 return NotFound("User not found");
             }
-            if(user.Role== StatusUserEnum.Student)
+            if (user.Role == StatusUserEnum.Student)
             {
                 var student = await _context.Students
                 .Include(s => s.Group)
@@ -80,11 +81,7 @@ namespace API.Controllers
                 .Include(e => e.Assistant)
                     .ThenInclude(a => a.Department)
                 .Include(e => e.Session)
-                .Include(e => e.ExamRequestRooms)
-                    .ThenInclude(er => er.Room)
                 .ToListAsync();
-
-
 
                 if (examRequests == null || !examRequests.Any())
                 {
@@ -118,9 +115,7 @@ namespace API.Controllers
                     .Include(e => e.Assistant)
                         .ThenInclude(a => a.Department)
                     .Include(e => e.Session)
-                    .Include(e => e.ExamRequestRooms)
-                        .ThenInclude(er => er.Room)
-                    .Where(e => e.Group.GroupID == groupId) 
+                    .Where(e => e.Group.GroupID == groupId)
                     .ToListAsync();
 
                 if (examRequests == null || !examRequests.Any())

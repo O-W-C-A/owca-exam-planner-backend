@@ -1,8 +1,10 @@
 ﻿using API.Data;
 using API.Models;
 using API.Models.USV;
-using System.Text.Json;
+
 using Microsoft.EntityFrameworkCore;
+
+using System.Text.Json;
 
 namespace API.Services
 {
@@ -89,9 +91,9 @@ namespace API.Services
                     var user = new User
                     {
                         FacultyID = faculty.FacultyID,
-                        FirstName = professor?.FirstName ?? "Unknown", 
-                        LastName = professor?.LastName ?? "Unknown",  
-                        Username = $"{(professor?.FirstName ?? "unknown").ToLower()}.{(professor?.LastName ?? "unknown").ToLower()}",
+                        FirstName = professor?.FirstName ?? "Unknown",
+                        LastName = professor?.LastName ?? "Unknown",
+                        Email = $"{(professor?.FirstName ?? "unknown").ToLower()}.{(professor?.LastName ?? "unknown").ToLower()}",
                         PasswordHash = "test",
                         Role = "Professor",
                         UniversityID = 1,
@@ -110,14 +112,14 @@ namespace API.Services
                     else
                     {
                         Console.WriteLine($"Utilizatorul {user.FirstName} {user.LastName} există deja.");
-                        user = existingUser; 
+                        user = existingUser;
                     }
 
                     var professorEntity = new Professor
                     {
                         UserID = user.UserID,
                         DepartmentID = null,
-                        Title = "Lecturer", 
+                        Title = "Lecturer",
                         CreationDate = DateTime.UtcNow
                     };
 
@@ -178,16 +180,16 @@ namespace API.Services
             foreach (var room in rooms)
             {
                 var department = await _dbContext.Departments
-                    .FirstOrDefaultAsync(d => d.Name == room.Name); 
+                    .FirstOrDefaultAsync(d => d.Name == room.Name);
 
                 int? departmentId = department?.DepartmentID;
 
                 var roomEntity = new Room
                 {
-                    DepartmentID = departmentId, 
-                    Name = room?.ShortName ?? "Unknown", 
-                    Location = room?.BuildingName ?? "Unknown", 
-                    Capacity = null, 
+                    DepartmentID = departmentId,
+                    Name = room?.ShortName ?? "Unknown",
+                    Location = room?.BuildingName ?? "Unknown",
+                    Capacity = null,
                     Description = "No description",
                     CreationDate = DateTime.UtcNow
                 };
@@ -197,7 +199,7 @@ namespace API.Services
 
                 if (existingRoom == null)
                 {
-                    _dbContext.Rooms.Add(roomEntity);  
+                    _dbContext.Rooms.Add(roomEntity);
                 }
                 else
                 {
@@ -207,6 +209,5 @@ namespace API.Services
 
             await _dbContext.SaveChangesAsync();
         }
-
     }
 }

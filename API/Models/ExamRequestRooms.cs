@@ -1,16 +1,16 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations.Schema;
 
 namespace API.Models
 {
-    public class ExamRequestRoom
+    public class ExamRequestRooms
     {
-        [Key]
-        public int Id { get; set; } 
         public int ExamRequestID { get; set; }
         public int RoomID { get; set; }
 
+        [ForeignKey("ExamRequestID")]
         public virtual ExamRequest ExamRequest { get; set; }
+
+        [ForeignKey("RoomID")]
         public virtual Room Room { get; set; }
     }
-
 }
