@@ -41,7 +41,6 @@ if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
     app.UseSwaggerUI();
 }
 
-
 // Aplică politica CORS
 app.UseCors("AllowAll");
 app.UseRouting();
