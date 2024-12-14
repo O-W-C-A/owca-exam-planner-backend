@@ -61,7 +61,7 @@ namespace API.Controllers
                     .ToListAsync();
 
                 var availableCourses = courses
-                    .Where(course => !examRequests.Contains(course.CourseID))
+                    .Where(course => examRequests.Contains(course.CourseID))
                     .ToList();
 
                 if (availableCourses == null || !availableCourses.Any())
