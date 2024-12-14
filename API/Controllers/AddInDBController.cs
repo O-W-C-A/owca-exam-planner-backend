@@ -22,17 +22,25 @@ namespace API.Controllers
                 return BadRequest("User data is null.");
             }
 
-            var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == user.Email);
-            if (existingUser != null)
+            try
             {
-                return Conflict("A user with the same email already exists.");
+                var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == user.Email);
+                if (existingUser != null)
+                {
+                    return Conflict("A user with the same email already exists.");
+                }
+
+                await _context.Users.AddAsync(user);
+                await _context.SaveChangesAsync();
+
+                return Ok("User added successfully.");
             }
-
-            await _context.Users.AddAsync(user);
-            await _context.SaveChangesAsync();
-
-            return Ok("User added successfully.");
+            catch (Exception ex)
+            {
+                return BadRequest($"An error occurred: {ex.Message}");
+            }
         }
+
         [HttpPost("course")]
         public async Task<IActionResult> CreateCourse([FromBody] Course course)
         {

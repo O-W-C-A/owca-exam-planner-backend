@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace API.Models
 {
@@ -11,9 +12,11 @@ namespace API.Models
         public int GroupID { get; set; }
         public bool IsLeader { get; set; }
         public DateTime CreationDate { get; set; }
+        [JsonIgnore]
 
         [ForeignKey("UserID")]
         public virtual User User { get; set; }
+        [JsonIgnore]
 
         [ForeignKey("GroupID")]
 

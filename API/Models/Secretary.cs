@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace API.Models
 {
@@ -12,9 +13,11 @@ namespace API.Models
         public string Title { get; set; }
         public DateTime CreationDate { get; set; }
 
+        [JsonIgnore]
         [ForeignKey("UserID")]
         public virtual User User { get; set; }
 
+        [JsonIgnore]
         [ForeignKey("SpecializationID")]
         public virtual Specialization Specialization { get; set; }
     }
