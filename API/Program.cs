@@ -35,11 +35,12 @@ builder.Services.AddScoped<FacultyService>();
 var app = builder.Build();
 
 // Configurează pipeline-ul HTTP
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
 
 // Aplică politica CORS
 app.UseCors("AllowAll");
