@@ -203,9 +203,7 @@ namespace API.Controllers
         {
             try
             {
-                var requestedRooms = await _context.ExamRequestRooms
-                    .Include(er => er.Room)
-                    .Include(er => er.Room.Department)
+                var requestedRooms = await _context.Rooms
                     .Take(10)
                     .ToListAsync();
 
@@ -217,12 +215,12 @@ namespace API.Controllers
                 var roomDTOs = requestedRooms.Select(room => new
                 {
                     room.RoomID,
-                    room.Room.Name,
-                    room.Room.Location,
-                    room.Room.Capacity,
-                    room.Room.Description,
-                    DepartmentName = room.Room.Department?.Name,
-                    ExamRequestCount = requestedRooms.Count(rr => rr.RoomID == rr.Room.RoomID)
+                    room.Name,
+                    room.Location,
+                    room.Capacity,
+                    room.Description,
+                    DepartmentName = room.Department?.Name,
+                    ExamRequestCount = requestedRooms.Count(rr => rr.RoomID == rr.RoomID)
                 });
 
                 return Ok(roomDTOs);
