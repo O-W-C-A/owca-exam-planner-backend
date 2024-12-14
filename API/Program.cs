@@ -35,7 +35,7 @@ builder.Services.AddScoped<FacultyService>();
 var app = builder.Build();
 
 // Configurează pipeline-ul HTTP
-if (app.Environment.IsDevelopment() || app.Environment.IsProduction())
+if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
