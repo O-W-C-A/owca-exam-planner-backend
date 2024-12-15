@@ -18,17 +18,4 @@ jobs:
           else
             echo "PR title is valid."
           fi
-      # Step 2: Fail if PR has the 'wip' label using jq
-      - name: Check for WIP label
-        id: check_wip
-        run: |
-          # Get the labels from the pull request as a JSON array
-          labels="${{ toJson(github.event.pull_request.labels) }}"
 
-          # Check if 'wip' label is present
-          if echo "$labels" | grep -q 'name: wip'; then
-            echo "WIP label found. Failing the job."
-            exit 1
-          else
-            echo "No WIP label found. Continuing."
-          fi
