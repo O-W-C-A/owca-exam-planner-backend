@@ -129,7 +129,8 @@ namespace API.Data
                 .OnDelete(DeleteBehavior.NoAction);
 
             modelBuilder.Entity<LabHolders>()
-                .HasKey(lh => new { lh.CourseID, lh.ProfessorID });
+                .HasKey(lh => lh.Id);
+
 
             modelBuilder.Entity<LabHolders>()
                 .HasOne(lh => lh.Course)
@@ -139,9 +140,16 @@ namespace API.Data
 
             modelBuilder.Entity<LabHolders>()
                 .HasOne(lh => lh.Professor)
-                .WithMany()
+                .WithMany()  // Assuming one professor can hold many lab courses
                 .HasForeignKey(lh => lh.ProfessorID)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<LabHolders>()
+                .HasOne(lh => lh.Course)
+                .WithMany()  // Assuming each course can have multiple lab holders
+                .HasForeignKey(lh => lh.CourseID)
+                .OnDelete(DeleteBehavior.Restrict);
+
 
             modelBuilder.Entity<ExamRequestRooms>()
                 .HasKey(er => new { er.ExamRequestID, er.RoomID });

@@ -10,7 +10,7 @@ namespace API.Models
         public int ExamRequestID { get; set; }
         public int GroupID { get; set; }
         public int CourseID { get; set; }
-        public int AssistantID { get; set; }
+        public int? AssistantID { get; set; }
         public int SessionID { get; set; }
         public string Type { get; set; }
         public DateTime Date { get; set; }

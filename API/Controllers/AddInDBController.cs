@@ -185,15 +185,7 @@ namespace API.Controllers
                 return NotFound("Course not found.");
             }
 
-            var rooms = await _context.Rooms
-                .Where(r => examRequestDto.RoomIDs.Contains(r.RoomID))
-                .ToListAsync();
-            if (rooms.Count != examRequestDto.RoomIDs.Count)
-            {
-                return NotFound("One or more rooms not found.");
-            }
-
-            var labHolder = await _context.LabHolders
+            /*var labHolder = await _context.LabHolders
                 .Include(lh => lh.Course)
                 .Include(lh => lh.Professor)
                 .Where(lh => lh.ProfessorID == examRequestDto.AssistantID && lh.CourseID == examRequestDto.CourseID)
@@ -202,7 +194,7 @@ namespace API.Controllers
             if (labHolder == null)
             {
                 return NotFound("Assistant not found in the specified course.");
-            }
+            }*/
 
             var session = await _context.Sessions.FindAsync(examRequestDto.SessionID);
             if (session == null)
@@ -215,7 +207,7 @@ namespace API.Controllers
             {
                 GroupID = examRequestDto.GroupID,
                 CourseID = examRequestDto.CourseID,
-                AssistantID = examRequestDto.AssistantID,
+                AssistantID = null,
                 SessionID = examRequestDto.SessionID,
                 Type = examRequestDto.Type,
                 Date = examRequestDto.Date,
@@ -228,20 +220,9 @@ namespace API.Controllers
             examRequest.Session = session;
             examRequest.Course = course;
             examRequest.Group = group;
-            examRequest.Assistant = labHolder.Professor;
 
             _context.ExamRequests.Add(examRequest);
 
-            // Insert Exam Requested Rooms into ExamRequestRooms table
-            foreach (var room in rooms)
-            {
-                var examRequestRooms = new ExamRequestRooms
-                {
-                    ExamRequestID = examRequest.ExamRequestID,
-                    RoomID = room.RoomID
-                };
-                _context.ExamRequestRooms.Add(examRequestRooms);
-            }
 
             // Commit changes to the database
             await _context.SaveChangesAsync();

@@ -5,6 +5,7 @@ using API.Models.DTOmodels;
 
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 namespace API.Controllers
 {
     public class ExamController : ControllerBase
@@ -56,12 +57,12 @@ namespace API.Controllers
                 }
 
                 var examRequests = await _context.ExamRequests
-                    .Where(er => er.GroupID == student.GroupID)
+                    .Where(er => er.GroupID == student.GroupID && er.Status=="Pending")
                     .Select(er => er.CourseID)
                     .ToListAsync();
 
                 var availableCourses = courses
-                    .Where(course => !examRequests.Contains(course.CourseID))
+                    .Where(course => examRequests.Contains(course.CourseID))
                     .ToList();
 
                 if (availableCourses == null || !availableCourses.Any())
@@ -203,11 +204,11 @@ namespace API.Controllers
         {
             try
             {
-                var requestedRooms = await _context.ExamRequestRooms
-                    .Include(er => er.Room)
-                    .Include(er => er.Room.Department)
-                    .Take(10)
-                    .ToListAsync();
+                var requestedRooms = await _context.Rooms
+     .OrderByDescending(r => r.RoomID) // Înlocuiește `Id` cu o coloană relevantă pentru ordonare
+     .Take(20)
+     .ToListAsync();
+
 
                 if (requestedRooms == null || !requestedRooms.Any())
                 {
@@ -217,12 +218,12 @@ namespace API.Controllers
                 var roomDTOs = requestedRooms.Select(room => new
                 {
                     room.RoomID,
-                    room.Room.Name,
-                    room.Room.Location,
-                    room.Room.Capacity,
-                    room.Room.Description,
-                    DepartmentName = room.Room.Department?.Name,
-                    ExamRequestCount = requestedRooms.Count(rr => rr.RoomID == rr.Room.RoomID)
+                    room.Name,
+                    room.Location,
+                    room.Capacity,
+                    room.Description,
+                    DepartmentName = room.Department?.Name,
+                    ExamRequestCount = requestedRooms.Count(rr => rr.RoomID == rr.RoomID)
                 });
 
                 return Ok(roomDTOs);
@@ -264,9 +265,10 @@ namespace API.Controllers
         }
 
         [HttpPatch("UpdateExamStatus/{id}")]
-        public async Task<IActionResult> UpdateExamStatus(int id, string status)
+        public async Task<IActionResult> UpdateExamStatus(int id ,[FromBody]UpdateExamRequestModel examModel)
         {
-            if (string.IsNullOrEmpty(status))
+
+            if (string.IsNullOrEmpty(examModel.Status))
             {
                 return BadRequest("Invalid status data.");
             }
@@ -278,7 +280,7 @@ namespace API.Controllers
             }
 
             // Actualizarea câmpului `Status`
-            existingExamRequest.Status = status;
+            existingExamRequest.Status = examModel.Status;
 
             // Salvarea modificărilor
             _context.ExamRequests.Update(existingExamRequest);
