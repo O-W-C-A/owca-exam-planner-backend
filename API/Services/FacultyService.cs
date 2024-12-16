@@ -3,6 +3,7 @@ using API.Models;
 using API.Models.USV;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 
 using System.Text.Json;
 
@@ -84,16 +85,24 @@ namespace API.Services
                         Console.WriteLine($"Nu s-a găsit facultatea: {professor.FacultyName}");
                         continue;
                     }
-                    var department = await _dbContext.Departments
-                        .FirstOrDefaultAsync(d => d.Name == professor.FacultyName);
 
-                    int? departmentId = department?.DepartmentID;
+                    var ProfessorEmail = "";
+                    if (professor.EmailAddress.Trim().IsNullOrEmpty())
+                    {
+                        ProfessorEmail = $"{(professor?.FirstName ?? "unknown").ToLower().Trim()}.{(professor?.LastName ?? "unknown").ToLower().Trim()}@usm.ro";
+
+                    }
+                    else
+                    {
+                        ProfessorEmail = professor.EmailAddress.Trim();
+                    }
+
                     var user = new User
                     {
                         FacultyID = faculty.FacultyID,
-                        FirstName = professor?.FirstName ?? "Unknown",
-                        LastName = professor?.LastName ?? "Unknown",
-                        Email = $"{(professor?.FirstName ?? "unknown").ToLower()}.{(professor?.LastName ?? "unknown").ToLower()}",
+                        FirstName = string.IsNullOrWhiteSpace(professor?.FirstName) ? "Unknown" : professor.FirstName.Trim(),
+                        LastName = string.IsNullOrWhiteSpace(professor?.LastName) ? "Unknown" : professor.LastName.Trim(),
+                        Email = string.IsNullOrWhiteSpace(ProfessorEmail) ? "unknown@example.com" : ProfessorEmail.Trim(),
                         PasswordHash = "test",
                         Role = "Professors",
                         UniversityID = 1,
@@ -102,7 +111,7 @@ namespace API.Services
                     };
 
                     var existingUser = await _dbContext.Users
-                        .FirstOrDefaultAsync(u => u.FirstName == user.FirstName && u.LastName == user.LastName);
+                        .FirstOrDefaultAsync(u => u.Email == user.Email);
 
                     if (existingUser == null)
                     {
@@ -115,10 +124,29 @@ namespace API.Services
                         user = existingUser;
                     }
 
+                    // Add new department in case it does not exists
+                    var department = await _dbContext.Departments.FirstOrDefaultAsync(d => d.Name == professor.DepartmentName);
+                    if (department == null)
+                    {
+                        var departmentEntity = new Department
+                        {
+                            FacultyID = faculty.FacultyID,
+                            Name = professor.DepartmentName,
+                            CreationDate = DateTime.UtcNow
+                        };
+
+                        _dbContext.Departments.Add(departmentEntity);
+                        await _dbContext.SaveChangesAsync();
+
+                    }
+
+                    // Check again if the department was added
+                    department = await _dbContext.Departments.FirstOrDefaultAsync(d => d.Name == professor.DepartmentName);
+
                     var professorEntity = new Professor
                     {
                         UserID = user.UserID,
-                        DepartmentID = null,
+                        DepartmentID = department?.DepartmentID,
                         Title = "Lecturer",
                         CreationDate = DateTime.UtcNow
                     };
@@ -140,6 +168,7 @@ namespace API.Services
             }
             catch (Exception ex)
             {
+                // To do: Log out each professor identity which could not be imported
                 Console.WriteLine($"Eroare la sincronizarea profesorilor: {ex.Message}");
             }
         }

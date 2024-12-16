@@ -38,6 +38,10 @@ namespace API.Data
                 .HasForeignKey(u => u.FacultyID)
                 .OnDelete(DeleteBehavior.NoAction);
 
+            modelBuilder.Entity<User>()
+                .HasIndex(u => u.Email)
+                .IsUnique();
+
             modelBuilder.Entity<Department>()
                 .HasOne(d => d.Faculty)
                 .WithMany()
