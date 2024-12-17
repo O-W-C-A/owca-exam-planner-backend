@@ -57,12 +57,12 @@ namespace API.Controllers
                 }
 
                 var examRequests = await _context.ExamRequests
-                    .Where(er => er.GroupID == student.GroupID && er.Status=="Pending")
+                    .Where(er => er.GroupID == student.GroupID)
                     .Select(er => er.CourseID)
                     .ToListAsync();
 
                 var availableCourses = courses
-                    .Where(course => examRequests.Contains(course.CourseID))
+                    .Where(course => !examRequests.Contains(course.CourseID))
                     .ToList();
 
                 if (availableCourses == null || !availableCourses.Any())
