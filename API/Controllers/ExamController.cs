@@ -1,6 +1,7 @@
 ﻿using API.Data;
 using API.Enum;
 using API.Mapping;
+using API.Models;
 using API.Models.DTOmodels;
 
 using Microsoft.AspNetCore.Mvc;
@@ -281,6 +282,27 @@ namespace API.Controllers
 
             // Actualizarea câmpului `Status`
             existingExamRequest.Status = examModel.Status;
+
+            if (examModel.RoomsId != null && examModel.RoomsId.Any())
+            {
+                // Ștergerea vechilor camere asociate
+                var existingRooms = await _context.ExamRequestRooms
+                                                  .Where(er => er.ExamRequestID == id)
+                                                  .ToListAsync();
+
+                _context.ExamRequestRooms.RemoveRange(existingRooms);
+
+                // Crearea noilor asocieri
+                var newRooms = examModel.RoomsId.Select(roomId => new ExamRequestRooms
+                {
+                    ExamRequestID = id,
+                    RoomID = roomId,
+                    CreationDate = DateTime.Now
+                }).ToList();
+
+                // Adăugarea noilor camere
+                _context.ExamRequestRooms.AddRange(newRooms);
+            }
 
             // Salvarea modificărilor
             _context.ExamRequests.Update(existingExamRequest);
