@@ -87,7 +87,7 @@ namespace API.Services
                     }
 
                     var ProfessorEmail = "";
-                    if (professor.EmailAddress.Trim().IsNullOrEmpty())
+                    if (string.IsNullOrEmpty(professor.EmailAddress.Trim()))
                     {
                         ProfessorEmail = $"{(professor?.FirstName ?? "unknown").ToLower().Trim()}.{(professor?.LastName ?? "unknown").ToLower().Trim()}@usm.ro";
 
