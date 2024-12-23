@@ -3,6 +3,7 @@ using API.Enum;
 using API.Mapping;
 using API.Models.DTOmodels;
 
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -81,6 +82,7 @@ namespace API.Controllers
             }
         }
 
+        [Authorize]
         [HttpGet("examrequests")]
         public async Task<IActionResult> GetAllExamRequests()
         {
@@ -287,6 +289,66 @@ namespace API.Controllers
             await _context.SaveChangesAsync();
 
             return Ok(existingExamRequest);
+        }
+
+        [HttpGet("events/student/{userId}")]
+        public async Task<IActionResult> GetStudentEvents(int userId)
+        {
+            try
+            {
+                // Get student's group
+                var student = await _context.Students
+                    .Include(s => s.Group)
+                    .FirstOrDefaultAsync(s => s.UserID == userId);
+
+                if (student == null)
+                {
+                    return NotFound("Student not found");
+                }
+
+                // Get exam requests for student's group
+                var examRequests = await _context.ExamRequests
+                    .Include(e => e.Course)
+                        .ThenInclude(c => c.Professor)
+                            .ThenInclude(p => p.User)
+                    .Include(e => e.Assistant)
+                        .ThenInclude(a => a.User)
+                    .Include(e => e.Group)
+                    .Where(e => e.GroupID == student.GroupID)
+                    .ToListAsync();
+
+                // Map to event format
+                var events = examRequests.Select(exam => new
+                {
+                    id = exam.ExamRequestID.ToString(),
+                    title = exam.Course.Title,
+                    start = exam.Date.Add(exam.TimeStart),
+                    end = exam.Date.Add(exam.TimeEnd),
+                    isConfirmed = exam.Status == "Confirmed",
+                    details = new
+                    {
+                        professor = new
+                        {
+                            firstName = exam.Course.Professor.User.FirstName,
+                            lastName = exam.Course.Professor.User.LastName
+                        },
+                        assistant = exam.Assistant != null ? new
+                        {
+                            firstName = exam.Assistant.User.FirstName,
+                            lastName = exam.Assistant.User.LastName
+                        } : null,
+                        group = exam.Group.Name,
+                        type = exam.Type,
+                        notes = exam.Details
+                    }
+                }).ToList();
+
+                return Ok(events);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
         }
 
     }
