@@ -1,6 +1,7 @@
 ﻿using API.Data;
 using API.Enum;
 using API.Mapping;
+using API.Models;
 using API.Models.DTOmodels;
 
 using Microsoft.AspNetCore.Authorization;
@@ -207,7 +208,7 @@ namespace API.Controllers
             try
             {
                 var requestedRooms = await _context.Rooms
-     .OrderByDescending(r => r.RoomID) // Înlocuiește `Id` cu o coloană relevantă pentru ordonare
+     .OrderByDescending(r => r.RoomID) // Înlocuiețte `Id` cu o coloană relevantă pentru ordonare
      .Take(20)
      .ToListAsync();
 
@@ -322,8 +323,8 @@ namespace API.Controllers
                 {
                     id = exam.ExamRequestID.ToString(),
                     title = exam.Course.Title,
-                    start = exam.Date.Add(exam.TimeStart),
-                    end = exam.Date.Add(exam.TimeEnd),
+                    start = exam.TimeStart.HasValue ? exam.Date.Add(exam.TimeStart.Value) : exam.Date,
+                    end = exam.TimeEnd.HasValue ? exam.Date.Add(exam.TimeEnd.Value) : exam.Date.AddHours(2), // Default 2-hour duration
                     isConfirmed = exam.Status == "Confirmed",
                     details = new
                     {
@@ -344,6 +345,74 @@ namespace API.Controllers
                 }).ToList();
 
                 return Ok(events);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        [HttpPost("event/exam-request")]
+        public async Task<IActionResult> CreateExamSuggestion([FromBody] ExamRequestDto examRequest)
+        {
+            try
+            {
+                // Validate input
+                if (examRequest == null)
+                {
+                    return BadRequest("Invalid request data");
+                }
+
+                // Parse the date
+                if (!DateTime.TryParse(examRequest.ExamDate, out DateTime parsedDate))
+                {
+                    return BadRequest("Invalid date format");
+                }
+
+                // Verify course exists
+                var course = await _context.Courses
+                    .FirstOrDefaultAsync(c => c.CourseID == examRequest.CourseId);
+                if (course == null)
+                {
+                    return NotFound($"Course with ID {examRequest.CourseId} not found");
+                }
+
+                // Verify group exists
+                var group = await _context.Groups
+                    .FirstOrDefaultAsync(g => g.GroupID == examRequest.GroupId);
+                if (group == null)
+                {
+                    return NotFound($"Group with ID {examRequest.GroupId} not found");
+                }
+
+                // Get current active session
+                var activeSession = await _context.Sessions
+                    .FirstOrDefaultAsync(s => s.Status == "Active");
+                if (activeSession == null)
+                {
+                    return BadRequest("No active exam session found");
+                }
+
+                // Create new exam request
+                var newExamRequest = new ExamRequest
+                {
+                    CourseID = examRequest.CourseId,
+                    GroupID = examRequest.GroupId,
+                    SessionID = activeSession.SessionID,
+                    Date = parsedDate,
+                    Details = examRequest.Details,
+                    Status = "Pending",
+                    CreationDate = DateTime.UtcNow
+                };
+
+                _context.ExamRequests.Add(newExamRequest);
+                await _context.SaveChangesAsync();
+
+                return Ok(new 
+                { 
+                    message = "Exam suggestion created successfully",
+                    examRequestId = newExamRequest.ExamRequestID
+                });
             }
             catch (Exception ex)
             {

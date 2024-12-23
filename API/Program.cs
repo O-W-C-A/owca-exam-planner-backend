@@ -45,12 +45,21 @@ builder.Services.AddAuthentication("Bearer")
     {
         options.TokenValidationParameters = new TokenValidationParameters
         {
-            ValidateIssuerSigningKey = true, // Ensure the token has a valid signing key
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Secret"])), // Signing key
-            ValidateIssuer = false, // Skip issuer validation
-            ValidateAudience = false // Skip audience validation
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Secret"])),
+            ValidateIssuer = false,
+            ValidateAudience = false,
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.Zero
         };
     });
+
+// Add after authentication configuration
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("GroupLeaderPolicy", policy =>
+        policy.RequireClaim("IsGroupLeader", "true"));
+});
 
 var app = builder.Build();
 

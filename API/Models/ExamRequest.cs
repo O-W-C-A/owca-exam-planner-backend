@@ -14,8 +14,8 @@ namespace API.Models
         public int SessionID { get; set; }
         public string Type { get; set; }
         public DateTime Date { get; set; }
-        public TimeSpan TimeStart { get; set; }
-        public TimeSpan TimeEnd { get; set; }
+        public TimeSpan? TimeStart { get; set; }
+        public TimeSpan? TimeEnd { get; set; }
         public string Details { get; set; }
         public string Status { get; set; }
         public DateTime CreationDate { get; set; }
