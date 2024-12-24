@@ -319,30 +319,7 @@ namespace API.Controllers
                     .ToListAsync();
 
                 // Map to event format
-                var events = examRequests.Select(exam => new
-                {
-                    id = exam.ExamRequestID.ToString(),
-                    title = exam.Course.Title,
-                    start = exam.TimeStart.HasValue ? exam.Date.Add(exam.TimeStart.Value) : exam.Date,
-                    end = exam.TimeEnd.HasValue ? exam.Date.Add(exam.TimeEnd.Value) : exam.Date.AddHours(2), // Default 2-hour duration
-                    isConfirmed = exam.Status == "Confirmed",
-                    details = new
-                    {
-                        professor = new
-                        {
-                            firstName = exam.Course.Professor.User.FirstName,
-                            lastName = exam.Course.Professor.User.LastName
-                        },
-                        assistant = exam.Assistant != null ? new
-                        {
-                            firstName = exam.Assistant.User.FirstName,
-                            lastName = exam.Assistant.User.LastName
-                        } : null,
-                        group = exam.Group.Name,
-                        type = exam.Type,
-                        notes = exam.Details
-                    }
-                }).ToList();
+                var events = examRequests.Select(exam => MapToEventFormat(exam)).ToList();
 
                 return Ok(events);
             }
@@ -418,6 +395,104 @@ namespace API.Controllers
             {
                 return StatusCode(500, $"Internal server error: {ex.Message}");
             }
+        }
+
+        [HttpGet("event/exam-request/professor/{userId}/course/{courseId}")]
+        public async Task<IActionResult> GetExamRequestsByProfessorAndCourse(int userId, int courseId)
+        {
+            try
+            {
+                var professor = await _context.Professors
+                    .FirstOrDefaultAsync(p => p.UserID == userId);
+
+                if (professor == null)
+                {
+                    return NotFound($"No professor found for user ID {userId}");
+                }
+
+                var examRequests = await _context.ExamRequests
+                    .Include(e => e.Course)
+                        .ThenInclude(c => c.Professor)
+                            .ThenInclude(p => p.User)
+                    .Include(e => e.Group)
+                    .Include(e => e.Assistant)
+                        .ThenInclude(a => a.User)
+                    .Where(e => e.Course.ProfessorID == professor.ProfessorID && e.CourseID == courseId)
+                    .OrderByDescending(e => e.Date)
+                    .ToListAsync();
+
+                var events = examRequests.Select(exam => MapToEventFormat(exam)).ToList();
+
+                return Ok(events);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        [HttpGet("event/exam-request/professor/{userId}")]
+        public async Task<IActionResult> GetAllExamRequestsByProfessor(int userId)
+        {
+            try
+            {
+                var professor = await _context.Professors
+                    .FirstOrDefaultAsync(p => p.UserID == userId);
+
+                if (professor == null)
+                {
+                    return NotFound($"No professor found for user ID {userId}");
+                }
+
+                var examRequests = await _context.ExamRequests
+                    .Include(e => e.Course)
+                        .ThenInclude(c => c.Professor)
+                            .ThenInclude(p => p.User)
+                    .Include(e => e.Group)
+                    .Include(e => e.Assistant)
+                        .ThenInclude(a => a.User)
+                    .Where(e => e.Course.ProfessorID == professor.ProfessorID)
+                    .OrderByDescending(e => e.Date)
+                    .ToListAsync();
+
+                var events = examRequests.Select(exam => MapToEventFormat(exam)).ToList();
+
+                return Ok(events);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        // Common event mapping function to maintain consistency
+        private object MapToEventFormat(ExamRequest exam)
+        {
+            return new
+            {
+                id = exam.ExamRequestID.ToString(),
+                title = exam.Course.Title,
+                date = exam.Date.ToString("yyyy-MM-dd"),
+                start = exam.TimeStart,
+                end = exam.TimeEnd,
+                status = exam.Status,
+                details = new
+                {
+                    professor = new
+                    {
+                        firstName = exam.Course.Professor.User.FirstName,
+                        lastName = exam.Course.Professor.User.LastName
+                    },
+                    assistant = exam.Assistant != null ? new
+                    {
+                        firstName = exam.Assistant.User.FirstName,
+                        lastName = exam.Assistant.User.LastName
+                    } : null,
+                    group = exam.Group.Name,
+                    type = exam.Type,
+                    notes = exam.Details
+                }
+            };
         }
 
     }
