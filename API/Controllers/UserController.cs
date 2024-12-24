@@ -140,5 +140,39 @@ namespace API.Controllers
                 return StatusCode(500, $"Internal server error: {ex.Message}");
             }
         }
+
+        //[Authorize]
+        [HttpGet("users/professor/{userId}")]
+        public async Task<IActionResult> GetProfessorDetails(int userId)
+        {
+            try
+            {
+                var professor = await _context.Professors
+                    .Include(p => p.User)
+                    .Include(p => p.Department)
+                    .FirstOrDefaultAsync(p => p.UserID == userId);
+
+                if (professor == null)
+                {
+                    return NotFound($"No professor found for user ID {userId}");
+                }
+
+                var professorDetails = new
+                {
+                    id = professor.ProfessorID.ToString(),
+                    firstName = professor.User.FirstName,
+                    lastName = professor.User.LastName,
+                    email = professor.User.Email,
+                    department = professor.Department?.Name ?? "No Department",
+                    title = professor.Title
+                };
+
+                return Ok(professorDetails);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
     }
 }
