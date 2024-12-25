@@ -10,6 +10,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 namespace API.Controllers
 {
+    [ApiController]
+    [Authorize]  // Protect all endpoints in this controller by default
     public class ExamController : ControllerBase
     {
         private readonly ApiDbContext _context;
@@ -378,7 +380,7 @@ namespace API.Controllers
                     SessionID = activeSession.SessionID,
                     Date = parsedDate,
                     Details = examRequest.Details,
-                    Status = "Pending",
+                    Status = ExamRequestStatusEnum.Pending,
                     CreationDate = DateTime.UtcNow
                 };
 
@@ -458,6 +460,38 @@ namespace API.Controllers
                 var events = examRequests.Select(exam => MapToEventFormat(exam)).ToList();
 
                 return Ok(events);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        [HttpPut("event/exam-request/{examId}/reject")]
+        public async Task<IActionResult> RejectExamRequest(int examId, [FromBody] RejectRequestDto request)
+        {
+            try
+            {
+                var examRequest = await _context.ExamRequests
+                    .Include(e => e.Course)
+                    .FirstOrDefaultAsync(e => e.ExamRequestID == examId);
+
+                if (examRequest == null)
+                {
+                    return NotFound($"Exam request with ID {examId} not found");
+                }
+
+                // Update the exam request
+                examRequest.Status = ExamRequestStatusEnum.Rejected;
+                examRequest.Details = request.Reason;  // Store rejection reason in details
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new 
+                { 
+                    message = "Exam request rejected successfully",
+                    examRequestId = examId
+                });
             }
             catch (Exception ex)
             {

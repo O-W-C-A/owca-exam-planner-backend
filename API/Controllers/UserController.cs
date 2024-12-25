@@ -124,6 +124,10 @@ namespace API.Controllers
                     .Include(s => s.Group)
                     .FirstOrDefaultAsync(s => s.UserID == userId);
 
+                var professorInfo = await _context.Professors
+                    .Include(p => p.Department)
+                    .FirstOrDefaultAsync(p => p.UserID == userId && p.DepartmentID != null);
+
                 // Return user data (excluding sensitive information)
                 return Ok(new
                 {
@@ -132,7 +136,8 @@ namespace API.Controllers
                     email = user.Email,
                     role = user.Role,
                     faculty = user.Faculty?.LongName,
-                    group = studentInfo?.Group?.Name // Will be null if user is not a student
+                    group = studentInfo?.Group?.Name, // Will be null if user is not a student
+                    department = professorInfo?.Department?.Name // Will be null if user is not a professor
                 });
             }
             catch (Exception ex)
@@ -141,7 +146,7 @@ namespace API.Controllers
             }
         }
 
-        //[Authorize]
+        [Authorize]
         [HttpGet("users/professor/{userId}")]
         public async Task<IActionResult> GetProfessorDetails(int userId)
         {
@@ -168,6 +173,39 @@ namespace API.Controllers
                 };
 
                 return Ok(professorDetails);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        [Authorize]
+        [HttpGet("users/assistants/{courseId}")]
+        public async Task<IActionResult> GetCourseAssistants(int courseId)
+        {
+            try
+            {
+                // Get lab holders (assistants) for the course
+                var assistants = await _context.LabHolders
+                    .Include(lh => lh.Professor)
+                        .ThenInclude(p => p.User)
+                    .Where(lh => lh.CourseID == courseId)
+                    .Select(lh => new
+                    {
+                        id = lh.ProfessorID,
+                        firstName = lh.Professor.User.FirstName,
+                        lastName = lh.Professor.User.LastName,
+                        fullName = $"{lh.Professor.User.FirstName} {lh.Professor.User.LastName}"
+                    })
+                    .ToListAsync();
+
+                if (!assistants.Any())
+                {
+                    return NotFound($"No assistants found for course ID {courseId}");
+                }
+
+                return Ok(assistants);
             }
             catch (Exception ex)
             {

@@ -1,10 +1,12 @@
 using API.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 
 namespace API.Controllers
 {
     [ApiController]
+    [Authorize]
     public class CourseController : ControllerBase
     {
         private readonly ApiDbContext _context;
