@@ -61,12 +61,12 @@ namespace API.Controllers
                 }
 
                 var examRequests = await _context.ExamRequests
-                    .Where(er => er.GroupID == student.GroupID && er.Status=="Pending")
+                    .Where(er => er.GroupID == student.GroupID)
                     .Select(er => er.CourseID)
                     .ToListAsync();
 
                 var availableCourses = courses
-                    .Where(course => examRequests.Contains(course.CourseID))
+                    .Where(course => !examRequests.Contains(course.CourseID))
                     .ToList();
 
                 if (availableCourses == null || !availableCourses.Any())
@@ -286,6 +286,27 @@ namespace API.Controllers
 
             // Actualizarea câmpului `Status`
             existingExamRequest.Status = examModel.Status;
+
+            if (examModel.RoomsId != null && examModel.RoomsId.Any())
+            {
+                // Ștergerea vechilor camere asociate
+                var existingRooms = await _context.ExamRequestRooms
+                                                  .Where(er => er.ExamRequestID == id)
+                                                  .ToListAsync();
+
+                _context.ExamRequestRooms.RemoveRange(existingRooms);
+
+                // Crearea noilor asocieri
+                var newRooms = examModel.RoomsId.Select(roomId => new ExamRequestRooms
+                {
+                    ExamRequestID = id,
+                    RoomID = roomId,
+                    CreationDate = DateTime.Now
+                }).ToList();
+
+                // Adăugarea noilor camere
+                _context.ExamRequestRooms.AddRange(newRooms);
+            }
 
             // Salvarea modificărilor
             _context.ExamRequests.Update(existingExamRequest);
