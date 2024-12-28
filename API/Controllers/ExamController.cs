@@ -4,11 +4,14 @@ using API.Mapping;
 using API.Models;
 using API.Models.DTOmodels;
 
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 namespace API.Controllers
 {
+    [ApiController]
+    [Authorize]  // Protect all endpoints in this controller by default
     public class ExamController : ControllerBase
     {
         private readonly ApiDbContext _context;
@@ -82,6 +85,7 @@ namespace API.Controllers
             }
         }
 
+        [Authorize]
         [HttpGet("examrequests")]
         public async Task<IActionResult> GetAllExamRequests()
         {
@@ -206,7 +210,7 @@ namespace API.Controllers
             try
             {
                 var requestedRooms = await _context.Rooms
-     .OrderByDescending(r => r.RoomID) // Înlocuiește `Id` cu o coloană relevantă pentru ordonare
+     .OrderByDescending(r => r.RoomID) // Înlocuiețte `Id` cu o coloană relevantă pentru ordonare
      .Take(20)
      .ToListAsync();
 
@@ -309,6 +313,241 @@ namespace API.Controllers
             await _context.SaveChangesAsync();
 
             return Ok(existingExamRequest);
+        }
+
+        [HttpGet("events/student/{userId}")]
+        public async Task<IActionResult> GetStudentEvents(int userId)
+        {
+            try
+            {
+                // Get student's group
+                var student = await _context.Students
+                    .Include(s => s.Group)
+                    .FirstOrDefaultAsync(s => s.UserID == userId);
+
+                if (student == null)
+                {
+                    return NotFound("Student not found");
+                }
+
+                // Get exam requests for student's group
+                var examRequests = await _context.ExamRequests
+                    .Include(e => e.Course)
+                        .ThenInclude(c => c.Professor)
+                            .ThenInclude(p => p.User)
+                    .Include(e => e.Assistant)
+                        .ThenInclude(a => a.User)
+                    .Include(e => e.Group)
+                    .Where(e => e.GroupID == student.GroupID)
+                    .ToListAsync();
+
+                // Map to event format
+                var events = examRequests.Select(exam => MapToEventFormat(exam)).ToList();
+
+                return Ok(events);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        [HttpPost("event/exam-request")]
+        public async Task<IActionResult> CreateExamSuggestion([FromBody] ExamRequestDto examRequest)
+        {
+            try
+            {
+                // Validate input
+                if (examRequest == null)
+                {
+                    return BadRequest("Invalid request data");
+                }
+
+                // Parse the date
+                if (!DateTime.TryParse(examRequest.ExamDate, out DateTime parsedDate))
+                {
+                    return BadRequest("Invalid date format");
+                }
+
+                // Verify course exists
+                var course = await _context.Courses
+                    .FirstOrDefaultAsync(c => c.CourseID == examRequest.CourseId);
+                if (course == null)
+                {
+                    return NotFound($"Course with ID {examRequest.CourseId} not found");
+                }
+
+                // Verify group exists
+                var group = await _context.Groups
+                    .FirstOrDefaultAsync(g => g.GroupID == examRequest.GroupId);
+                if (group == null)
+                {
+                    return NotFound($"Group with ID {examRequest.GroupId} not found");
+                }
+
+                // Get current active session
+                var activeSession = await _context.Sessions
+                    .FirstOrDefaultAsync(s => s.Status == "Active");
+                if (activeSession == null)
+                {
+                    return BadRequest("No active exam session found");
+                }
+
+                // Create new exam request
+                var newExamRequest = new ExamRequest
+                {
+                    CourseID = examRequest.CourseId,
+                    GroupID = examRequest.GroupId,
+                    SessionID = activeSession.SessionID,
+                    Date = parsedDate,
+                    Details = examRequest.Details,
+                    Status = ExamRequestStatusEnum.Pending,
+                    CreationDate = DateTime.UtcNow
+                };
+
+                _context.ExamRequests.Add(newExamRequest);
+                await _context.SaveChangesAsync();
+
+                return Ok(new 
+                { 
+                    message = "Exam suggestion created successfully",
+                    examRequestId = newExamRequest.ExamRequestID
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        [HttpGet("event/exam-request/professor/{userId}/course/{courseId}")]
+        public async Task<IActionResult> GetExamRequestsByProfessorAndCourse(int userId, int courseId)
+        {
+            try
+            {
+                var professor = await _context.Professors
+                    .FirstOrDefaultAsync(p => p.UserID == userId);
+
+                if (professor == null)
+                {
+                    return NotFound($"No professor found for user ID {userId}");
+                }
+
+                var examRequests = await _context.ExamRequests
+                    .Include(e => e.Course)
+                        .ThenInclude(c => c.Professor)
+                            .ThenInclude(p => p.User)
+                    .Include(e => e.Group)
+                    .Include(e => e.Assistant)
+                        .ThenInclude(a => a.User)
+                    .Where(e => e.Course.ProfessorID == professor.ProfessorID && e.CourseID == courseId)
+                    .OrderByDescending(e => e.Date)
+                    .ToListAsync();
+
+                var events = examRequests.Select(exam => MapToEventFormat(exam)).ToList();
+
+                return Ok(events);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        [HttpGet("event/exam-request/professor/{userId}")]
+        public async Task<IActionResult> GetAllExamRequestsByProfessor(int userId)
+        {
+            try
+            {
+                var professor = await _context.Professors
+                    .FirstOrDefaultAsync(p => p.UserID == userId);
+
+                if (professor == null)
+                {
+                    return NotFound($"No professor found for user ID {userId}");
+                }
+
+                var examRequests = await _context.ExamRequests
+                    .Include(e => e.Course)
+                        .ThenInclude(c => c.Professor)
+                            .ThenInclude(p => p.User)
+                    .Include(e => e.Group)
+                    .Include(e => e.Assistant)
+                        .ThenInclude(a => a.User)
+                    .Where(e => e.Course.ProfessorID == professor.ProfessorID)
+                    .OrderByDescending(e => e.Date)
+                    .ToListAsync();
+
+                var events = examRequests.Select(exam => MapToEventFormat(exam)).ToList();
+
+                return Ok(events);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        [HttpPut("event/exam-request/{examId}/reject")]
+        public async Task<IActionResult> RejectExamRequest(int examId, [FromBody] RejectRequestDto request)
+        {
+            try
+            {
+                var examRequest = await _context.ExamRequests
+                    .Include(e => e.Course)
+                    .FirstOrDefaultAsync(e => e.ExamRequestID == examId);
+
+                if (examRequest == null)
+                {
+                    return NotFound($"Exam request with ID {examId} not found");
+                }
+
+                // Update the exam request
+                examRequest.Status = ExamRequestStatusEnum.Rejected;
+                examRequest.Details = request.Reason;  // Store rejection reason in details
+
+                await _context.SaveChangesAsync();
+
+                return Ok(new 
+                { 
+                    message = "Exam request rejected successfully",
+                    examRequestId = examId
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        // Common event mapping function to maintain consistency
+        private object MapToEventFormat(ExamRequest exam)
+        {
+            return new
+            {
+                id = exam.ExamRequestID.ToString(),
+                title = exam.Course.Title,
+                date = exam.Date.ToString("yyyy-MM-dd"),
+                start = exam.TimeStart,
+                end = exam.TimeEnd,
+                status = exam.Status,
+                details = new
+                {
+                    professor = new
+                    {
+                        firstName = exam.Course.Professor.User.FirstName,
+                        lastName = exam.Course.Professor.User.LastName
+                    },
+                    assistant = exam.Assistant != null ? new
+                    {
+                        firstName = exam.Assistant.User.FirstName,
+                        lastName = exam.Assistant.User.LastName
+                    } : null,
+                    group = exam.Group.Name,
+                    type = exam.Type,
+                    notes = exam.Details
+                }
+            };
         }
 
     }

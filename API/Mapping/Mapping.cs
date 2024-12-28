@@ -22,13 +22,15 @@ namespace API.Mapping
             {
                 Id = examRequest.ExamRequestID,
                 CourseId = examRequest.Course.CourseID,
+                GroupId = examRequest.GroupID,
                 CourseName = examRequest.Course?.Title,
                 FirstNameProf = examRequest.Course?.Professor?.User?.FirstName,
                 LastNameProf = examRequest.Course?.Professor?.User?.LastName,
-                ExamDate = examRequest.Date,
+                ExamDate = examRequest.Date.ToString("yyyy-MM-dd"),
                 TimeStart = examRequest.TimeStart,
+                TimeEnd = examRequest.TimeEnd,
                 Status = examRequest.Status,
-                Details=examRequest.Details,
+                Details = examRequest.Details,
             };
         }
     }
