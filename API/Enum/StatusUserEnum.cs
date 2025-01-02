@@ -2,8 +2,8 @@
 {
     public static class StatusUserEnum
     {
-        public const string Student = "Students";
-        public const string Professor = "Professors";
-        public const string Admin = "Admin";
+        public const string Student = "student";
+        public const string Professor = "professor";
+        public const string Admin = "admin";
     }
 }

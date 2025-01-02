@@ -12,6 +12,7 @@ namespace API.Controllers
 {
     [ApiController]
     [Authorize]  // Protect all endpoints in this controller by default
+    [Route("api/[controller]")]
     public class ExamController : ControllerBase
     {
         private readonly ApiDbContext _context;
@@ -153,9 +154,17 @@ namespace API.Controllers
                 {
                     return NotFound($"No exam requests found for Group ID: {groupId}");
                 }
+                var examRequestRooms = await _context.ExamRequestRooms
+                    .Include(err => err.Room)
+                    .Where(err => examRequests.Select(e => e.ExamRequestID).Contains(err.ExamRequestID))
+                    .ToListAsync();
 
-                var examDTOs = examRequests.Select(exam => _courseMapper.MapToExamRequestDto(exam)).ToList();
+                var examDTOs = examRequests
+                .Select(exam => _courseMapper.MapToExamRequestDto(exam, examRequestRooms))
+                .ToList();
+
                 return Ok(examDTOs);
+
             }
             catch (Exception ex)
             {

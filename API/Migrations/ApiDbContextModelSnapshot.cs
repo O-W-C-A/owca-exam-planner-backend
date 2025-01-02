@@ -54,7 +54,7 @@ namespace API.Migrations
 
                     b.HasIndex("SpecializationID");
 
-                    b.ToTable("Courses");
+                    b.ToTable("Courses", (string)null);
                 });
 
             modelBuilder.Entity("API.Models.Department", b =>
@@ -81,7 +81,7 @@ namespace API.Migrations
 
                     b.HasIndex("FacultyID");
 
-                    b.ToTable("Departments");
+                    b.ToTable("Departments", (string)null);
                 });
 
             modelBuilder.Entity("API.Models.ExamRequest", b =>
@@ -135,7 +135,7 @@ namespace API.Migrations
 
                     b.HasIndex("SessionID");
 
-                    b.ToTable("ExamRequests");
+                    b.ToTable("ExamRequests", (string)null);
                 });
 
             modelBuilder.Entity("API.Models.ExamRequestRooms", b =>
@@ -153,7 +153,7 @@ namespace API.Migrations
 
                     b.HasIndex("RoomID");
 
-                    b.ToTable("ExamRequestRooms");
+                    b.ToTable("ExamRequestRooms", (string)null);
                 });
 
             modelBuilder.Entity("API.Models.Faculty", b =>
@@ -178,7 +178,7 @@ namespace API.Migrations
 
                     b.HasKey("FacultyID");
 
-                    b.ToTable("Faculties");
+                    b.ToTable("Faculties", (string)null);
                 });
 
             modelBuilder.Entity("API.Models.Group", b =>
@@ -202,7 +202,7 @@ namespace API.Migrations
 
                     b.HasIndex("SpecializationID");
 
-                    b.ToTable("Groups");
+                    b.ToTable("Groups", (string)null);
                 });
 
             modelBuilder.Entity("API.Models.LabHolders", b =>
@@ -228,7 +228,7 @@ namespace API.Migrations
 
                     b.HasIndex("ProfessorID");
 
-                    b.ToTable("LabHolders");
+                    b.ToTable("LabHolders", (string)null);
                 });
 
             modelBuilder.Entity("API.Models.Modifications", b =>
@@ -261,7 +261,7 @@ namespace API.Migrations
 
                     b.HasIndex("UserID");
 
-                    b.ToTable("Modifications");
+                    b.ToTable("Modifications", (string)null);
                 });
 
             modelBuilder.Entity("API.Models.Professor", b =>
@@ -290,7 +290,7 @@ namespace API.Migrations
 
                     b.HasIndex("UserID");
 
-                    b.ToTable("Professors");
+                    b.ToTable("Professors", (string)null);
                 });
 
             modelBuilder.Entity("API.Models.Room", b =>
@@ -323,7 +323,7 @@ namespace API.Migrations
 
                     b.HasIndex("DepartmentID");
 
-                    b.ToTable("Rooms");
+                    b.ToTable("Rooms", (string)null);
                 });
 
             modelBuilder.Entity("API.Models.Secretary", b =>
@@ -352,7 +352,7 @@ namespace API.Migrations
 
                     b.HasIndex("UserID");
 
-                    b.ToTable("Secretaries");
+                    b.ToTable("Secretaries", (string)null);
                 });
 
             modelBuilder.Entity("API.Models.Session", b =>
@@ -380,7 +380,7 @@ namespace API.Migrations
 
                     b.HasKey("SessionID");
 
-                    b.ToTable("Sessions");
+                    b.ToTable("Sessions", (string)null);
                 });
 
             modelBuilder.Entity("API.Models.Specialization", b =>
@@ -407,7 +407,7 @@ namespace API.Migrations
 
                     b.HasIndex("FacultyID");
 
-                    b.ToTable("Specializations");
+                    b.ToTable("Specializations", (string)null);
                 });
 
             modelBuilder.Entity("API.Models.Student", b =>
@@ -436,7 +436,7 @@ namespace API.Migrations
 
                     b.HasIndex("UserID");
 
-                    b.ToTable("Students");
+                    b.ToTable("Students", (string)null);
                 });
 
             modelBuilder.Entity("API.Models.User", b =>
@@ -486,7 +486,7 @@ namespace API.Migrations
 
                     b.HasIndex("FacultyID");
 
-                    b.ToTable("Users");
+                    b.ToTable("Users", (string)null);
                 });
 
             modelBuilder.Entity("API.Models.Course", b =>

@@ -13,5 +13,7 @@
         public TimeSpan? TimeEnd { get; set; }
         public string Status { get; set; }
         public string Details { get; set; }
+        public List<RoomDto> Rooms { get; set; } // Lista de camere
+
     }
 }

@@ -103,8 +103,8 @@ namespace API.Services
                         FirstName = string.IsNullOrWhiteSpace(professor?.FirstName) ? "Unknown" : professor.FirstName.Trim(),
                         LastName = string.IsNullOrWhiteSpace(professor?.LastName) ? "Unknown" : professor.LastName.Trim(),
                         Email = string.IsNullOrWhiteSpace(ProfessorEmail) ? "unknown@example.com" : ProfessorEmail.Trim(),
-                        PasswordHash = "test",
-                        Role = "Professors",
+                        PasswordHash = "test222",
+                        Role = "professor",
                         UniversityID = 1,
                         Status = "Active",
                         CreationDate = DateTime.UtcNow
