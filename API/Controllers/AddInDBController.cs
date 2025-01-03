@@ -259,5 +259,22 @@ namespace API.Controllers
                 return StatusCode(500, $"A apărut o eroare: {ex.Message}");
             }
         }
+
+        [HttpGet("GetActiveSessions")]
+        public async Task<IActionResult> GetActiveSessions()
+        {
+            try
+            {
+                var activeSessions = await _context.Sessions
+                    .Where(session => session.Status == "Active")
+                    .ToListAsync();
+                return Ok(activeSessions);
+            }
+            catch (Exception ex)
+            {
+                // Gestionează erorile
+                return StatusCode(500, $"A apărut o eroare: {ex.Message}");
+            }
+        }
     }
 }

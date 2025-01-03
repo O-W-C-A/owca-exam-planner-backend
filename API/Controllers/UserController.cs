@@ -70,6 +70,20 @@ namespace API.Controllers
                         groupName = studentInfo?.Group?.Name
                     });
                 }
+                if(user.Role ==RoleEnum.Professor)
+                {
+                    var profInfo = await _context.Professors
+                        .FirstOrDefaultAsync(s => s.UserID == user.UserID);
+
+                    // Return prof-specific response
+                    return Ok(new
+                    {
+                        token = GenerateJwtToken(claims),
+                        role = user.Role,
+                        userId = user.UserID,
+                        profId = profInfo.ProfessorID,
+                    });
+                }
 
                 // Return basic response for non-student users
                 return Ok(new

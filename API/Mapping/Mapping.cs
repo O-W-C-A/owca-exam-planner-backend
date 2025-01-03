@@ -16,7 +16,7 @@ namespace API.Mapping
                 Status = course.Professor?.User?.Status,
             };
         }
-        public ExamRequestDto MapToExamRequestDto(ExamRequest examRequest)
+        public ExamRequestDto MapToExamRequestDto(ExamRequest examRequest, List<ExamRequestRooms> examRequestRooms = null)
         {
             return new ExamRequestDto
             {
@@ -31,7 +31,16 @@ namespace API.Mapping
                 TimeEnd = examRequest.TimeEnd,
                 Status = examRequest.Status,
                 Details = examRequest.Details,
-            };
+                Rooms = examRequestRooms?
+                    .Where(err => err.ExamRequestID == examRequest.ExamRequestID)
+                    .Select(err => new RoomDto
+                    {
+                        RoomID = err.Room.RoomID,
+                        Name = err.Room.Name,
+                        Location = err.Room.Location,
+                        Description = err.Room.Description
+                    }).ToList() ?? new List<RoomDto>() // Returnează o listă goală dacă examRequestRooms este null
+                };
         }
     }
 }
