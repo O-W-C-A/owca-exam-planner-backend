@@ -281,32 +281,25 @@ namespace API.Controllers
             }
         }
 
-        [HttpPatch("UpdateExamStatus/{id}")]
-        public async Task<IActionResult> UpdateExamStatus(int id ,[FromBody]UpdateExamRequestModel examModel)
+        [HttpPut("event/exam-request/{examId}/approve")]
+        public async Task<IActionResult> UpdateExamStatus(int examId, [FromBody]UpdateExamRequestModel examModel)
         {
-
-            if (string.IsNullOrEmpty(examModel.Status))
-            {
-                return BadRequest("Invalid status data.");
-            }
-
-            var existingExamRequest = await _context.ExamRequests.FindAsync(id);
+            var existingExamRequest = await _context.ExamRequests.FindAsync(examId);
             if (existingExamRequest == null)
             {
                 return NotFound("Exam request not found.");
             }
 
             // Actualizarea câmpului `Status`
-            existingExamRequest.Status = examModel.Status;
+            existingExamRequest.Status = ExamRequestStatusEnum.Approved;
             existingExamRequest.TimeStart = examModel.TimeStart;
             existingExamRequest.TimeEnd = examModel.TimeEnd;
-            existingExamRequest.Date = examModel.ExamDate;
 
             if (examModel.RoomsId != null && examModel.RoomsId.Any())
             {
                 // Ștergerea vechilor camere asociate
                 var existingRooms = await _context.ExamRequestRooms
-                                                  .Where(er => er.ExamRequestID == id)
+                                                  .Where(er => er.ExamRequestID == examId)
                                                   .ToListAsync();
 
                 _context.ExamRequestRooms.RemoveRange(existingRooms);
@@ -314,7 +307,7 @@ namespace API.Controllers
                 // Crearea noilor asocieri
                 var newRooms = examModel.RoomsId.Select(roomId => new ExamRequestRooms
                 {
-                    ExamRequestID = id,
+                    ExamRequestID = examId,
                     RoomID = roomId,
                     CreationDate = DateTime.Now
                 }).ToList();
@@ -356,8 +349,28 @@ namespace API.Controllers
                     .Where(e => e.GroupID == student.GroupID)
                     .ToListAsync();
 
-                // Map to event format
-                var events = examRequests.Select(exam => MapToEventFormat(exam)).ToList();
+
+                var examRequestRooms = await _context.ExamRequestRooms
+                    .Include(err => err.Room)
+                    .Where(err => examRequests.Select(e => e.ExamRequestID).Contains(err.ExamRequestID))
+                    .ToListAsync();
+
+                // Group rooms by ExamRequestID
+                var roomsByExamRequestId = examRequestRooms
+                    .GroupBy(err => err.ExamRequestID)
+                    .ToDictionary(
+                        g => g.Key,
+                        g => g.Select(r => new RoomDto
+                        {
+                            RoomID = r.Room.RoomID,
+                            Name = r.Room.Name,
+                            Location = r.Room.Location,
+                            Capacity = 0,
+                            Description = r.Room.Description
+                        }).ToList()
+                    );
+
+                var events = examRequests.Select(exam => MapToEventFormat(exam, roomsByExamRequestId)).ToList();
 
                 return Ok(events);
             }
@@ -459,7 +472,27 @@ namespace API.Controllers
                     .OrderByDescending(e => e.Date)
                     .ToListAsync();
 
-                var events = examRequests.Select(exam => MapToEventFormat(exam)).ToList();
+                var examRequestRooms = await _context.ExamRequestRooms
+                    .Include(err => err.Room)
+                    .Where(err => examRequests.Select(e => e.ExamRequestID).Contains(err.ExamRequestID))
+                    .ToListAsync();
+
+                // Group rooms by ExamRequestID
+                var roomsByExamRequestId = examRequestRooms
+                    .GroupBy(err => err.ExamRequestID)
+                    .ToDictionary(
+                        g => g.Key,
+                        g => g.Select(r => new RoomDto
+                        {
+                            RoomID = r.Room.RoomID,
+                            Name = r.Room.Name,
+                            Location = r.Room.Location,
+                            Capacity = 0,
+                            Description = r.Room.Description
+                        }).ToList()
+                    );
+
+                var events = examRequests.Select(exam => MapToEventFormat(exam, roomsByExamRequestId)).ToList();
 
                 return Ok(events);
             }
@@ -493,7 +526,27 @@ namespace API.Controllers
                     .OrderByDescending(e => e.Date)
                     .ToListAsync();
 
-                var events = examRequests.Select(exam => MapToEventFormat(exam)).ToList();
+                var examRequestRooms = await _context.ExamRequestRooms
+                    .Include(err => err.Room)
+                    .Where(err => examRequests.Select(e => e.ExamRequestID).Contains(err.ExamRequestID))
+                    .ToListAsync();
+
+                // Group rooms by ExamRequestID
+                var roomsByExamRequestId = examRequestRooms
+                    .GroupBy(err => err.ExamRequestID)
+                    .ToDictionary(
+                        g => g.Key,
+                        g => g.Select(r => new RoomDto
+                        {
+                            RoomID = r.Room.RoomID,
+                            Name = r.Room.Name,
+                            Location = r.Room.Location,
+                            Capacity = 0,
+                            Description = r.Room.Description
+                        }).ToList()
+                    );
+
+                var events = examRequests.Select(exam => MapToEventFormat(exam, roomsByExamRequestId)).ToList();
 
                 return Ok(events);
             }
@@ -575,14 +628,16 @@ namespace API.Controllers
                 return StatusCode(500, $"Internal server error: {ex.Message}");
             }
         }
-
         // Common event mapping function to maintain consistency
-        private object MapToEventFormat(ExamRequest exam)
+        private object MapToEventFormat(ExamRequest exam, Dictionary<int, List<RoomDto>> roomsByExamRequestId)
         {
+            roomsByExamRequestId.TryGetValue(exam.ExamRequestID, out var rooms);
+
             return new
             {
                 id = exam.ExamRequestID.ToString(),
                 title = exam.Course.Title,
+                courseId = exam.Course.CourseID,
                 date = exam.Date.ToString("yyyy-MM-dd"),
                 start = exam.TimeStart,
                 end = exam.TimeEnd,
@@ -601,10 +656,10 @@ namespace API.Controllers
                     } : null,
                     group = exam.Group.Name,
                     type = exam.Type,
-                    notes = exam.Details
+                    notes = exam.Details,
+                    rooms = rooms
                 }
             };
         }
-
     }
 }
