@@ -12,7 +12,6 @@ namespace API.Controllers
 {
     [ApiController]
     [Authorize]  // Protect all endpoints in this controller by default
-    [Route("api/[controller]")]
     public class ExamController : ControllerBase
     {
         private readonly ApiDbContext _context;
@@ -204,8 +203,14 @@ namespace API.Controllers
                 {
                     return NotFound($"No exam requests found for Group ID: {profId}");
                 }
+                var examRequestRooms = await _context.ExamRequestRooms
+                   .Include(err => err.Room)
+                   .Where(err => examRequests.Select(e => e.ExamRequestID).Contains(err.ExamRequestID))
+                   .ToListAsync();
 
-                var examDTOs = examRequests.Select(exam => _courseMapper.MapToExamRequestDto(exam)).ToList();
+                var examDTOs = examRequests
+                .Select(exam => _courseMapper.MapToExamRequestDto(exam, examRequestRooms))
+                .ToList();
                 return Ok(examDTOs);
             }
             catch (Exception ex)
@@ -219,10 +224,8 @@ namespace API.Controllers
             try
             {
                 var requestedRooms = await _context.Rooms
-     .OrderByDescending(r => r.RoomID) // Înlocuiețte `Id` cu o coloană relevantă pentru ordonare
-     .Take(20)
-     .ToListAsync();
-
+                    .OrderByDescending(r => r.RoomID) // Înlocuiețte `Id` cu o coloană relevantă pentru ordonare
+                    .ToListAsync();
 
                 if (requestedRooms == null || !requestedRooms.Any())
                 {
@@ -295,6 +298,9 @@ namespace API.Controllers
 
             // Actualizarea câmpului `Status`
             existingExamRequest.Status = examModel.Status;
+            existingExamRequest.TimeStart = examModel.TimeStart;
+            existingExamRequest.TimeEnd = examModel.TimeEnd;
+            existingExamRequest.Date = examModel.ExamDate;
 
             if (examModel.RoomsId != null && examModel.RoomsId.Any())
             {
@@ -462,7 +468,7 @@ namespace API.Controllers
                 return StatusCode(500, $"Internal server error: {ex.Message}");
             }
         }
-
+        
         [HttpGet("event/exam-request/professor/{userId}")]
         public async Task<IActionResult> GetAllExamRequestsByProfessor(int userId)
         {
@@ -490,6 +496,47 @@ namespace API.Controllers
                 var events = examRequests.Select(exam => MapToEventFormat(exam)).ToList();
 
                 return Ok(events);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
+
+        [HttpGet("GetLabHoldersByCourseID/{courseId}")]
+        public async Task<IActionResult> GetLabHoldersByCourseID(int courseId)
+        {
+            try
+            {
+                // Fetch all lab holders for the given course ID
+                var labHolders = await _context.LabHolders
+                    .Where(p => p.CourseID == courseId)
+                    .ToListAsync();
+
+                if (!labHolders.Any())
+                {
+                    return NotFound($"No labHolders found for course ID {courseId}");
+                }
+
+                // Fetch associated professors
+                var professors = await _context.Professors
+                    .Include(e => e.User)
+                    .Where(p => labHolders.Select(l => l.ProfessorID).Contains(p.ProfessorID))
+                    .Select(p => new
+                    {
+                        ProfessorId = p.ProfessorID,
+                        UserId = p.UserID,
+                        FirstName = p.User.FirstName,
+                        LastName = p.User.LastName
+                    })
+                    .ToListAsync();
+
+                if (!professors.Any())
+                {
+                    return NotFound($"No professors found for lab holders in course ID {courseId}");
+                }
+
+                return Ok(professors);
             }
             catch (Exception ex)
             {
