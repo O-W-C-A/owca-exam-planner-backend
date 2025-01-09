@@ -13,7 +13,7 @@ namespace API.Enum
         /// <summary>
         /// Status when exam request is approved
         /// </summary>
-        public const string Confirmed = "Confirmed";
+        public const string Approved = "Approved";
 
         /// <summary>
         /// Status when exam request is rejected
