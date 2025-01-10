@@ -11,6 +11,9 @@ namespace API.Models
         public int ProfessorID { get; set; }
         public int SpecializationID { get; set; }
         public string Title { get; set; }
+        public int Year { get; set; }
+        [Range(1, 2, ErrorMessage = "Semester must be either 1 or 2.")]
+        public int Semester { get; set; }
         public string Description { get; set; }
         public string Status { get; set; }
         public DateTime CreationDate { get; set; }
