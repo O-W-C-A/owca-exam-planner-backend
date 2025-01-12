@@ -46,14 +46,28 @@ namespace API.Controllers
                     return NotFound("Student not found");
                 }
 
+                var groupName = student.Group.Name; 
+                if (string.IsNullOrEmpty(groupName))
+                {
+                    return BadRequest("Invalid group name format.");
+                }
+
+                int year;
+                if (!int.TryParse(groupName[2].ToString(), out year))
+                {
+                    return BadRequest("Invalid year in group name.");
+                }
+
+
                 var specializationId = student.Group.SpecializationID;
 
                 // Obținem cursurile pentru specializarea studentului
                 var courses = await _context.Courses
-                    .Where(c => c.SpecializationID == specializationId)
+                    .Where(c => c.SpecializationID == specializationId && c.Year==year)
                     .Include(c => c.Professor)
                     .ThenInclude(c => c.User)
                     .ToListAsync();
+
 
                 if (courses == null || !courses.Any())
                 {
