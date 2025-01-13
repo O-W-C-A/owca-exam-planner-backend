@@ -642,6 +642,38 @@ namespace API.Controllers
                 return StatusCode(500, $"Internal server error: {ex.Message}");
             }
         }
+
+        [HttpPut("event/exam-request/{examId}/pending")]
+        public async Task<IActionResult> PendingExamRequest(int examId, [FromBody] PendingRequestDto request)
+        {
+            try
+            {
+                var examRequest = await _context.ExamRequests
+                    .Include(e => e.Course)
+                    .FirstOrDefaultAsync(e => e.ExamRequestID == examId);
+
+                if (examRequest == null)
+                {
+                    return NotFound($"Exam request with ID {examId} not found");
+                }
+
+                // Update the exam request
+                examRequest.Status = ExamRequestStatusEnum.Pending;
+                examRequest.Details = request.Reason; 
+                examRequest.Date = request.Date;
+                await _context.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    message = "Exam request pending successfully",
+                    examRequestId = examId
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Internal server error: {ex.Message}");
+            }
+        }
         // Common event mapping function to maintain consistency
         private object MapToEventFormat(ExamRequest exam, Dictionary<int, List<RoomDto>> roomsByExamRequestId)
         {
